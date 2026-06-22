@@ -1,0 +1,40 @@
+{
+  "proyectos": [
+    {
+      "id": "1",
+      "nombre": "Portafolio personal",
+      "descripcion": "Mi sitio web de presentación",
+      "fechaLimite": "2025-08-01"
+    },
+    {
+      "nombre": "ECOTUCUMAN",
+      "descripcion": "UNA API PARA EL USO DEL VECINO DE SAN MIGUEL DE TUCUMAN QUE PERMITA INFORMAR DE MANERA DIRECTA A LA MUNICIPALIDAD SOBRE BASURALES, BACHES, DESVIO DE COLECTIVOS, CORTES, PUNTOS VERDES, ATC",
+      "fechaLimite": "2026-06-15",
+      "id": "tnL5p8RVfhA"
+    },
+    {
+      "nombre": "Ciber tucuman",
+      "descripcion": "un ciber destinado a los jovenes para que puedan jugar al counter 1.6",
+      "fechaLimite": "2026-06-17",
+      "id": "JpvSEj3Lcgc"
+    }
+  ],
+  "tareas": [
+    {
+      "id": "1",
+      "proyectoId": 1,
+      "nombre": "Crear estructura HTML",
+      "responsable": "Ana",
+      "estado": "En progreso"
+    }
+  ],
+  "comentarios": [
+    {
+      "id": "1",
+      "tareaId": 1,
+      "texto": "Estructura lista, falta el CSS",
+      "fecha": "2025-06-15"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

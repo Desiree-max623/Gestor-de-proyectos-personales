@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Proyectos Personales</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1, h2 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .seccion {
+            background: white;
+            padding: 20px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        input, select, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .tarjeta {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+        .pendiente { border-color: #f39c12; background-color: #fef5e7; }
+        .en-progreso { border-color: #3498db; background-color: #eaf2f8; }
+        .completada { border-color: #2ecc71; background-color: #eafaf1; }
+        .acciones {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestor de Proyectos Personales</h1>
+
+    <!-- SECCIÓN PROYECTOS -->
+    <section class="seccion" id="seccion-proyectos">
+        <h2>Proyectos</h2>
+        <form id="form-proyecto">
+            <input type="text" id="nombre-proyecto" placeholder="Nombre del proyecto" required>
+            <input type="text" id="descripcion-proyecto" placeholder="Descripción breve" required>
+            <input type="date" id="fecha-proyecto" required>
+            <button type="submit">Crear Proyecto</button>
+        </form>
+        <div id="lista-proyectos"></div>
+    </section>
+
+    <!-- SECCIÓN TAREAS -->
+    <section class="seccion" id="seccion-tareas" style="display: none;">
+        <h2>Tareas: <span id="nombre-proyecto-activo"></span></h2>
+        <button id="volver-proyectos">← Volver a proyectos</button>
+        <form id="form-tarea">
+            <input type="text" id="nombre-tarea" placeholder="Nombre de la tarea" required>
+            <input type="text" id="responsable-tarea" placeholder="Responsable" required>
+            <select id="estado-tarea">
+                <option value="Pendiente" selected>Pendiente</option>
+                <option value="En progreso">En progreso</option>
+                <option value="Completada">Completada</option>
+            </select>
+            <button type="submit">Crear Tarea</button>
+        </form>
+        <div id="lista-tareas"></div>
+
+        <!-- SECCIÓN COMENTARIOS -->
+        <div id="seccion-comentarios" style="display: none; margin-top: 30px;">
+            <h3>Comentarios</h3>
+            <form id="form-comentario">
+                <input type="text" id="texto-comentario" placeholder="Escribir comentario..." required>
+                <button type="submit">Agregar</button>
+            </form>
+            <div id="lista-comentarios"></div>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
