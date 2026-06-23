@@ -1,14 +1,9 @@
-// ======================
-// VARIABLES GLOBALES
-// ======================
 const API_URL = "http://localhost:3000";
 let proyectoActivoId = null;
 let tareaActivaId = null;
 
-// ======================
-// CARGA INICIAL
-// ======================
 document.addEventListener("DOMContentLoaded", () => {
+    verificarServidor();
     obtenerProyectos();
     // Eventos de formularios
     document.getElementById("form-proyecto").addEventListener("submit", crearProyecto);
@@ -17,11 +12,34 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("volver-proyectos").addEventListener("click", volverAProyectos);
 });
 
-// ==================================
-// ✅ CRUD 1: PROYECTOS
-// ==================================
+// Avisa de forma visible si json-server no está corriendo,
+// en vez de fallar en silencio en cada botón
+async function verificarServidor() {
+    try {
+        await axios.get(`${API_URL}/proyectos`);
+    } catch (error) {
+        mostrarAviso(
+            "No se pudo conectar con el servidor. Iniciá json-server con: json-server --watch db.json",
+            "error"
+        );
+    }
+}
 
-// 🔵 LEER: Obtener todos los proyectos
+// Muestra un mensaje flotante arriba de la pantalla (éxito o error)
+function mostrarAviso(mensaje, tipo = "error") {
+    const existente = document.querySelector(".aviso");
+    if (existente) existente.remove();
+
+    const aviso = document.createElement("div");
+    aviso.className = `aviso aviso-${tipo}`;
+    aviso.textContent = mensaje;
+    document.body.appendChild(aviso);
+
+    setTimeout(() => aviso.remove(), 5000);
+}
+
+
+
 async function obtenerProyectos() {
     try {
         // Método GET - tal como lo pide la consigna
@@ -32,20 +50,29 @@ async function obtenerProyectos() {
         const contenedor = document.getElementById("lista-proyectos");
         contenedor.innerHTML = "";
 
+        if (proyectos.length === 0) {
+            contenedor.innerHTML = `<p class="vacio">Todavía no creaste ningún proyecto. Usá el formulario de arriba para empezar.</p>`;
+            return;
+        }
+
         proyectos.forEach(proyecto => {
             // Contamos tareas para cada proyecto
-            contarTareasDeProyecto(proyecto.id).then(cantidad => {
+            contarTareasDeProyecto(proyecto.id).then(({ total, completadas }) => {
+                const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
                 const tarjeta = document.createElement("div");
                 tarjeta.className = "tarjeta";
                 tarjeta.innerHTML = `
-                    <h3>${proyecto.nombre}</h3>
-                    <p>${proyecto.descripcion}</p>
+                    <h3>${escaparHtml(proyecto.nombre)}</h3>
+                    <p>${escaparHtml(proyecto.descripcion)}</p>
                     <p><strong>Límite:</strong> ${proyecto.fechaLimite}</p>
-                    <p><strong>Tareas:</strong> ${cantidad}</p>
+                    <div class="barra-progreso">
+                        <div class="barra-progreso-relleno" style="width: ${porcentaje}%"></div>
+                    </div>
+                    <p class="texto-progreso">${completadas} de ${total} tareas completadas</p>
                     <div class="acciones">
-                        <button onclick="verTareas(${proyecto.id})">Ver Tareas</button>
-                        <button onclick="abrirEditarProyecto(${proyecto.id}, '${proyecto.nombre}', '${proyecto.descripcion}', '${proyecto.fechaLimite}')">Editar</button>
-                        <button onclick="eliminarProyecto(${proyecto.id})">Eliminar</button>
+                        <button onclick="verTareas('${proyecto.id}')">Ver tareas</button>
+                        <button onclick="abrirEditarProyecto('${proyecto.id}')">Editar</button>
+                        <button onclick="eliminarProyecto('${proyecto.id}')">Eliminar</button>
                     </div>
                 `;
                 contenedor.appendChild(tarjeta);
@@ -54,10 +81,11 @@ async function obtenerProyectos() {
 
     } catch (error) {
         console.error("Error al obtener proyectos:", error);
+        mostrarAviso("No se pudieron cargar los proyectos. Revisá que el servidor esté corriendo.");
     }
 }
 
-// ➕ CREAR: Nuevo proyecto
+
 async function crearProyecto(e) {
     e.preventDefault();
     const nombre = document.getElementById("nombre-proyecto").value;
@@ -65,7 +93,7 @@ async function crearProyecto(e) {
     const fecha = document.getElementById("fecha-proyecto").value;
 
     try {
-        // Método POST
+
         await axios.post(`${API_URL}/proyectos`, {
             nombre: nombre,
             descripcion: descripcion,
@@ -75,12 +103,14 @@ async function crearProyecto(e) {
         obtenerProyectos();
         // Limpiamos formulario
         e.target.reset();
+        mostrarAviso("Proyecto creado", "exito");
     } catch (error) {
         console.error("Error al crear proyecto:", error);
+        mostrarAviso("No se pudo crear el proyecto.");
     }
 }
 
-// ✏️ ACTUALIZAR: Editar proyecto
+
 async function editarProyecto(id, nuevosDatos) {
     try {
         // Método PUT (reemplaza todo) o PATCH (solo cambios)
@@ -91,7 +121,6 @@ async function editarProyecto(id, nuevosDatos) {
     }
 }
 
-// 🗑️ ELIMINAR: Proyecto + tareas + comentarios (en cascada)
 async function eliminarProyecto(id) {
     if (!confirm("¿Eliminar este proyecto y todo su contenido?")) return;
 
@@ -114,31 +143,47 @@ async function eliminarProyecto(id) {
     }
 }
 
-// Función auxiliar: contar tareas
+
 async function contarTareasDeProyecto(proyectoId) {
     const res = await axios.get(`${API_URL}/tareas?proyectoId=${proyectoId}`);
-    return res.data.length;
+    const total = res.data.length;
+    const completadas = res.data.filter(t => t.estado === "Completada").length;
+    return { total, completadas };
 }
 
-// Función auxiliar: abrir formulario de edición
-function abrirEditarProyecto(id, nombre, descripcion, fecha) {
-    const nuevoNombre = prompt("Nuevo nombre:", nombre);
-    const nuevaDesc = prompt("Nueva descripción:", descripcion);
-    const nuevaFecha = prompt("Nueva fecha (AAAA-MM-DD):", fecha);
-    if (nuevoNombre && nuevaDesc && nuevaFecha) {
-        editarProyecto(id, {
-            nombre: nuevoNombre,
-            descripcion: nuevaDesc,
-            fechaLimite: nuevaFecha
-        });
+
+async function abrirEditarProyecto(id) {
+    try {
+        const respuesta = await axios.get(`${API_URL}/proyectos/${id}`);
+        const proyecto = respuesta.data;
+
+        const nuevoNombre = prompt("Nuevo nombre:", proyecto.nombre);
+        if (nuevoNombre === null) return;
+        const nuevaDesc = prompt("Nueva descripción:", proyecto.descripcion);
+        if (nuevaDesc === null) return;
+        const nuevaFecha = prompt("Nueva fecha (AAAA-MM-DD):", proyecto.fechaLimite);
+        if (nuevaFecha === null) return;
+
+        if (nuevoNombre && nuevaDesc && nuevaFecha) {
+            editarProyecto(id, {
+                nombre: nuevoNombre,
+                descripcion: nuevaDesc,
+                fechaLimite: nuevaFecha
+            });
+        }
+    } catch (error) {
+        console.error("Error al cargar proyecto para editar:", error);
     }
 }
 
-// ==================================
-// ✅ CRUD 2: TAREAS
-// ==================================
 
-// 🔵 LEER: Tareas de un proyecto específico
+function escaparHtml(texto) {
+    const div = document.createElement("div");
+    div.textContent = texto ?? "";
+    return div.innerHTML;
+}
+
+
 async function obtenerTareas(proyectoId) {
     proyectoActivoId = proyectoId;
     try {
@@ -148,18 +193,23 @@ async function obtenerTareas(proyectoId) {
 
         document.getElementById("lista-tareas").innerHTML = "";
 
+        if (tareas.length === 0) {
+            document.getElementById("lista-tareas").innerHTML = `<p class="vacio">Este proyecto todavía no tiene tareas.</p>`;
+            return;
+        }
+
         tareas.forEach(tarea => {
             const tarjeta = document.createElement("div");
             tarjeta.className = `tarjeta ${tarea.estado.toLowerCase().replace(" ", "-")}`;
             tarjeta.innerHTML = `
-                <h4>${tarea.nombre}</h4>
-                <p>Responsable: ${tarea.responsable}</p>
-                <p>Estado: ${tarea.estado}</p>
+                <h4>${escaparHtml(tarea.nombre)}</h4>
+                <p>Responsable: ${escaparHtml(tarea.responsable)}</p>
+                <p>Estado: <span class="badge-estado">${tarea.estado}</span></p>
                 <div class="acciones">
-                    <button onclick="verComentarios(${tarea.id})">Ver Comentarios</button>
-                    <button onclick="cambiarEstadoTarea(${tarea.id}, '${tarea.estado}')">Cambiar Estado</button>
-                    <button onclick="editarTareaPrompt(${tarea.id}, '${tarea.nombre}', '${tarea.responsable}')">Editar</button>
-                    <button onclick="eliminarTarea(${tarea.id})">Eliminar</button>
+                    <button onclick="verComentarios('${tarea.id}')">Ver comentarios</button>
+                    <button onclick="cambiarEstadoTarea('${tarea.id}', '${tarea.estado}')">Cambiar estado</button>
+                    <button onclick="editarTareaPrompt('${tarea.id}')">Editar</button>
+                    <button onclick="eliminarTarea('${tarea.id}')">Eliminar</button>
                 </div>
             `;
             document.getElementById("lista-tareas").appendChild(tarjeta);
@@ -170,7 +220,6 @@ async function obtenerTareas(proyectoId) {
     }
 }
 
-// ➕ CREAR: Nueva tarea
 async function crearTarea(e) {
     e.preventDefault();
     const nombre = document.getElementById("nombre-tarea").value;
@@ -194,7 +243,6 @@ async function crearTarea(e) {
 // ✏️ ACTUALIZAR: Editar tarea
 async function editarTarea(id, datos) {
     try {
-        // Usamos PATCH (solo actualiza campos enviados)
         await axios.patch(`${API_URL}/tareas/${id}`, datos);
         obtenerTareas(proyectoActivoId);
     } catch (error) {
@@ -202,15 +250,15 @@ async function editarTarea(id, datos) {
     }
 }
 
-// ✏️ ACTUALIZAR: Cambiar estado
+
 async function cambiarEstadoTarea(id, estadoActual) {
     const estados = ["Pendiente", "En progreso", "Completada"];
     const indice = estados.indexOf(estadoActual);
-    const nuevoEstado = estados[(indice + 1) % 3]; // Ciclo entre estados
+    const nuevoEstado = estados[(indice + 1) % 3];
     await editarTarea(id, { estado: nuevoEstado });
 }
 
-// 🗑️ ELIMINAR: Tarea + comentarios
+
 async function eliminarTarea(id) {
     if (!confirm("¿Eliminar esta tarea y sus comentarios?")) return;
     try {
@@ -227,11 +275,17 @@ async function eliminarTarea(id) {
     }
 }
 
-// Auxiliar: ver tareas
-function verTareas(id) {
+
+async function verTareas(id) {
     proyectoActivoId = id;
     document.getElementById("seccion-proyectos").style.display = "none";
     document.getElementById("seccion-tareas").style.display = "block";
+    try {
+        const respuesta = await axios.get(`${API_URL}/proyectos/${id}`);
+        document.getElementById("nombre-proyecto-activo").textContent = respuesta.data.nombre;
+    } catch (error) {
+        console.error("Error al cargar nombre del proyecto:", error);
+    }
     obtenerTareas(id);
 }
 
@@ -243,19 +297,23 @@ function volverAProyectos() {
     document.getElementById("seccion-comentarios").style.display = "none";
 }
 
-function editarTareaPrompt(id, nombre, resp) {
-    const nuevoNombre = prompt("Nuevo nombre:", nombre);
-    const nuevoResp = prompt("Nuevo responsable:", resp);
-    if (nuevoNombre && nuevoResp) {
-        editarTarea(id, { nombre: nuevoNombre, responsable: nuevoResp });
+async function editarTareaPrompt(id) {
+    try {
+        const respuesta = await axios.get(`${API_URL}/tareas/${id}`);
+        const tarea = respuesta.data;
+        const nuevoNombre = prompt("Nuevo nombre:", tarea.nombre);
+        if (nuevoNombre === null) return;
+        const nuevoResp = prompt("Nuevo responsable:", tarea.responsable);
+        if (nuevoResp === null) return;
+        if (nuevoNombre && nuevoResp) {
+            editarTarea(id, { nombre: nuevoNombre, responsable: nuevoResp });
+        }
+    } catch (error) {
+        console.error("Error al cargar tarea para editar:", error);
     }
 }
 
-// ==================================
-// ✅ CRUD 3: COMENTARIOS
-// ==================================
 
-// 🔵 LEER: Comentarios de una tarea (del más nuevo al viejo)
 async function obtenerComentarios(tareaId) {
     tareaActivaId = tareaId;
     try {
@@ -266,15 +324,20 @@ async function obtenerComentarios(tareaId) {
         const contenedor = document.getElementById("lista-comentarios");
         contenedor.innerHTML = "";
 
+        if (comentarios.length === 0) {
+            contenedor.innerHTML = `<p class="vacio">Todavía no hay comentarios en esta tarea.</p>`;
+            return;
+        }
+
         comentarios.forEach(com => {
             const div = document.createElement("div");
             div.style.padding = "8px";
             div.style.borderBottom = "1px solid #eee";
             div.innerHTML = `
-                <p><strong>${com.fecha}</strong>: ${com.texto}</p>
+                <p><strong>${com.fecha}</strong>: ${escaparHtml(com.texto)}</p>
                 <div class="acciones">
-                    <button onclick="editarComentarioPrompt(${com.id}, '${com.texto}')">Editar</button>
-                    <button onclick="eliminarComentario(${com.id})">Eliminar</button>
+                    <button onclick="editarComentarioPrompt('${com.id}')">Editar</button>
+                    <button onclick="eliminarComentario('${com.id}')">Eliminar</button>
                 </div>
             `;
             contenedor.appendChild(div);
@@ -285,7 +348,7 @@ async function obtenerComentarios(tareaId) {
     }
 }
 
-// ➕ CREAR: Comentario con fecha automática
+
 async function crearComentario(e) {
     e.preventDefault();
     const texto = document.getElementById("texto-comentario").value;
@@ -304,7 +367,6 @@ async function crearComentario(e) {
     }
 }
 
-// ✏️ ACTUALIZAR: Editar comentario
 async function editarComentario(id, nuevoTexto) {
     try {
         await axios.patch(`${API_URL}/comentarios/${id}`, { texto: nuevoTexto });
@@ -314,7 +376,6 @@ async function editarComentario(id, nuevoTexto) {
     }
 }
 
-// 🗑️ ELIMINAR: Comentario
 async function eliminarComentario(id) {
     if (!confirm("¿Eliminar este comentario?")) return;
     try {
@@ -325,14 +386,18 @@ async function eliminarComentario(id) {
     }
 }
 
-// Auxiliar: ver comentarios
 function verComentarios(tareaId) {
     tareaActivaId = tareaId;
     document.getElementById("seccion-comentarios").style.display = "block";
     obtenerComentarios(tareaId);
 }
 
-function editarComentarioPrompt(id, textoActual) {
-    const nuevoTexto = prompt("Editar comentario:", textoActual);
-    if (nuevoTexto) editarComentario(id, nuevoTexto);
+async function editarComentarioPrompt(id) {
+    try {
+        const respuesta = await axios.get(`${API_URL}/comentarios/${id}`);
+        const nuevoTexto = prompt("Editar comentario:", respuesta.data.texto);
+        if (nuevoTexto) editarComentario(id, nuevoTexto);
+    } catch (error) {
+        console.error("Error al cargar comentario para editar:", error);
+    }
 }

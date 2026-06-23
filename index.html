@@ -5,106 +5,304 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Proyectos Personales</title>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: Arial, sans-serif;
+        :root {
+            --bg: #FAF8F5;
+            --surface: #FFFFFF;
+            --ink: #1F2937;
+            --ink-soft: #6B7280;
+            --line: #E7E3DC;
+            --primary: #5B5FE3;
+            --primary-ink: #FFFFFF;
+            --pendiente: #E8954D;
+            --pendiente-bg: #FDF1E4;
+            --progreso: #5B5FE3;
+            --progreso-bg: #EEEEFC;
+            --completada: #2F9E6E;
+            --completada-bg: #E8F6EF;
+            --danger: #D1453B;
+            --radius: 14px;
+            --font-display: "Space Grotesk", sans-serif;
+            --font-body: "Inter", sans-serif;
         }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--ink);
+            padding: 32px 24px 80px;
+            line-height: 1.5;
         }
-        h1, h2 {
-            margin-bottom: 15px;
-            color: #2c3e50;
+
+        .contenedor-app {
+            max-width: 920px;
+            margin: 0 auto;
         }
+
+        header.encabezado {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+
+        h1 span {
+            color: var(--primary);
+        }
+
+        .subtitulo {
+            color: var(--ink-soft);
+            font-size: 14px;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 19px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            letter-spacing: -0.01em;
+        }
+
         .seccion {
-            background: white;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: var(--surface);
+            padding: 28px;
+            margin-bottom: 24px;
+            border-radius: var(--radius);
+            border: 1px solid var(--line);
         }
+
         form {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
-        input, select, button {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+
+        input, select {
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
             font-size: 14px;
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--ink);
+            flex: 1 1 160px;
+            min-width: 0;
         }
+
+        input:focus, select:focus, button:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 1px;
+            background: var(--surface);
+        }
+
         button {
-            background-color: #3498db;
-            color: white;
+            padding: 10px 18px;
             border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-body);
+            background: var(--primary);
+            color: var(--primary-ink);
             cursor: pointer;
+            transition: opacity 0.15s ease, transform 0.1s ease;
+            white-space: nowrap;
         }
-        button:hover {
-            background-color: #2980b9;
+
+        button:hover { opacity: 0.88; }
+        button:active { transform: scale(0.98); }
+
+        #volver-proyectos {
+            background: transparent;
+            color: var(--ink-soft);
+            border: 1px solid var(--line);
+            margin-bottom: 20px;
+            padding: 8px 14px;
         }
+        #volver-proyectos:hover { background: var(--bg); opacity: 1; }
+
+        .grid-proyectos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+        }
+
         .tarjeta {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border-left: 4px solid;
+            padding: 18px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
+            background: var(--bg);
         }
-        .pendiente { border-color: #f39c12; background-color: #fef5e7; }
-        .en-progreso { border-color: #3498db; background-color: #eaf2f8; }
-        .completada { border-color: #2ecc71; background-color: #eafaf1; }
+
+        .tarjeta h3, .tarjeta h4 {
+            font-family: var(--font-display);
+            font-size: 16px;
+            margin-bottom: 6px;
+        }
+
+        .tarjeta p {
+            font-size: 13.5px;
+            color: var(--ink-soft);
+            margin-bottom: 4px;
+        }
+
+        .tarjeta p strong { color: var(--ink); }
+
+        .barra-progreso {
+            height: 6px;
+            background: var(--line);
+            border-radius: 4px;
+            margin: 10px 0 4px;
+            overflow: hidden;
+        }
+        .barra-progreso-relleno {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .texto-progreso {
+            font-size: 12px;
+            color: var(--ink-soft);
+            margin-bottom: 6px;
+        }
+
+        .pendiente { border-left: 4px solid var(--pendiente); background: var(--pendiente-bg); }
+        .en-progreso { border-left: 4px solid var(--progreso); background: var(--progreso-bg); }
+        .completada { border-left: 4px solid var(--completada); background: var(--completada-bg); }
+
+        .badge-estado {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background: rgba(0,0,0,0.06);
+        }
+
         .acciones {
-            margin-top: 10px;
+            margin-top: 12px;
             display: flex;
-            gap: 8px;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .acciones button {
+            padding: 6px 12px;
+            font-size: 12.5px;
+            background: var(--surface);
+            color: var(--ink);
+            border: 1px solid var(--line);
+        }
+        .acciones button:hover { background: var(--bg); opacity: 1; border-color: var(--ink-soft); }
+        .acciones button:first-child { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+        .acciones button:first-child:hover { opacity: 0.88; }
+
+        .vacio {
+            color: var(--ink-soft);
+            font-size: 14px;
+            padding: 24px 0;
+            text-align: center;
+        }
+
+        /* Avisos flotantes */
+        .aviso {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 100;
+            max-width: 320px;
+            animation: deslizar 0.2s ease-out;
+        }
+        .aviso-error { background: var(--danger); }
+        .aviso-exito { background: var(--completada); }
+
+        @keyframes deslizar {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 20px 14px 60px; }
+            .seccion { padding: 18px; }
+            form { flex-direction: column; }
+            input, select, form button { flex: 1 1 auto; width: 100%; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
         }
     </style>
 </head>
 <body>
-    <h1>Gestor de Proyectos Personales</h1>
+    <div class="contenedor-app">
+        <header class="encabezado">
+            <div>
+                <h1>Gestor de <span>Proyectos</span></h1>
+                <p class="subtitulo">Organizá tus proyectos, tareas y comentarios en un solo lugar</p>
+            </div>
+        </header>
 
-    <!-- SECCIÓN PROYECTOS -->
-    <section class="seccion" id="seccion-proyectos">
-        <h2>Proyectos</h2>
-        <form id="form-proyecto">
-            <input type="text" id="nombre-proyecto" placeholder="Nombre del proyecto" required>
-            <input type="text" id="descripcion-proyecto" placeholder="Descripción breve" required>
-            <input type="date" id="fecha-proyecto" required>
-            <button type="submit">Crear Proyecto</button>
-        </form>
-        <div id="lista-proyectos"></div>
-    </section>
-
-    <!-- SECCIÓN TAREAS -->
-    <section class="seccion" id="seccion-tareas" style="display: none;">
-        <h2>Tareas: <span id="nombre-proyecto-activo"></span></h2>
-        <button id="volver-proyectos">← Volver a proyectos</button>
-        <form id="form-tarea">
-            <input type="text" id="nombre-tarea" placeholder="Nombre de la tarea" required>
-            <input type="text" id="responsable-tarea" placeholder="Responsable" required>
-            <select id="estado-tarea">
-                <option value="Pendiente" selected>Pendiente</option>
-                <option value="En progreso">En progreso</option>
-                <option value="Completada">Completada</option>
-            </select>
-            <button type="submit">Crear Tarea</button>
-        </form>
-        <div id="lista-tareas"></div>
-
-        <!-- SECCIÓN COMENTARIOS -->
-        <div id="seccion-comentarios" style="display: none; margin-top: 30px;">
-            <h3>Comentarios</h3>
-            <form id="form-comentario">
-                <input type="text" id="texto-comentario" placeholder="Escribir comentario..." required>
-                <button type="submit">Agregar</button>
+        <!-- SECCIÓN PROYECTOS -->
+        <section class="seccion" id="seccion-proyectos">
+            <h2>Proyectos</h2>
+            <form id="form-proyecto">
+                <input type="text" id="nombre-proyecto" placeholder="Nombre del proyecto" required>
+                <input type="text" id="descripcion-proyecto" placeholder="Descripción breve" required>
+                <input type="date" id="fecha-proyecto" required>
+                <button type="submit">Crear proyecto</button>
             </form>
-            <div id="lista-comentarios"></div>
-        </div>
-    </section>
+            <div id="lista-proyectos" class="grid-proyectos"></div>
+        </section>
+
+        <!-- SECCIÓN TAREAS -->
+        <section class="seccion" id="seccion-tareas" style="display: none;">
+            <button id="volver-proyectos">← Volver a proyectos</button>
+            <h2>Tareas: <span id="nombre-proyecto-activo"></span></h2>
+            <form id="form-tarea">
+                <input type="text" id="nombre-tarea" placeholder="Nombre de la tarea" required>
+                <input type="text" id="responsable-tarea" placeholder="Responsable" required>
+                <select id="estado-tarea">
+                    <option value="Pendiente" selected>Pendiente</option>
+                    <option value="En progreso">En progreso</option>
+                    <option value="Completada">Completada</option>
+                </select>
+                <button type="submit">Crear tarea</button>
+            </form>
+            <div id="lista-tareas" class="grid-proyectos"></div>
+
+            <!-- SECCIÓN COMENTARIOS -->
+            <div id="seccion-comentarios" style="display: none; margin-top: 30px;">
+                <h2>Comentarios</h2>
+                <form id="form-comentario">
+                    <input type="text" id="texto-comentario" placeholder="Escribir comentario..." required>
+                    <button type="submit">Agregar</button>
+                </form>
+                <div id="lista-comentarios"></div>
+            </div>
+        </section>
+    </div>
 
     <script src="script.js"></script>
 </body>
